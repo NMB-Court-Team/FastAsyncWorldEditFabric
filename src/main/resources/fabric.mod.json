@@ -11,15 +11,14 @@
     "environment": "server",
     "entrypoints": {
         "main": [
-            "FastAsyncWorldEditMain"
+            {
+                "value": "net.astrorbits.fawe.FastAsyncWorldEditMain",
+                "adapter": "kotlin"
+            }
         ]
     },
     "mixins": [
-        "fastasyncworldedit.mixins.json",
-        {
-            "config": "fastasyncworldedit.client.mixins.json",
-            "environment": "client"
-        }
+        "fastasyncworldedit.mixins.json"
     ],
     "depends": {
         "fabricloader": ">=${loader_version}",

@@ -29,8 +29,25 @@ loom {
     mods {
         register("fastasyncworldedit") {
             sourceSet("main")
-            sourceSet("client")
         }
+    }
+
+    runs.named("client").configure {
+        runDirectory.set(file("run-client"))
+        programArguments.addAll(
+            "--username",
+            "DevPlayer",
+            "--uuid",
+            "1-0-1-0-1",
+            "--width",
+            "2880",
+            "--height",
+            "1920"
+        )
+    }
+
+    runs.named("server").configure {
+        runDirectory.set(file("run-server"))
     }
 }
 
