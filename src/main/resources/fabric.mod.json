@@ -1,0 +1,30 @@
+{
+    "schemaVersion": 1,
+    "id": "fastasyncworldedit",
+    "version": "${version}",
+    "name": "FastAsyncWorldEditFabric",
+    "description": "Fabric version of Fast Async World Edit.",
+    "authors": [],
+    "contact": {},
+    "license": "GPL-3.0",
+    "icon": "assets/fastasyncworldedit/icon.png",
+    "environment": "server",
+    "entrypoints": {
+        "main": [
+            "FastAsyncWorldEditMain"
+        ]
+    },
+    "mixins": [
+        "fastasyncworldedit.mixins.json",
+        {
+            "config": "fastasyncworldedit.client.mixins.json",
+            "environment": "client"
+        }
+    ],
+    "depends": {
+        "fabricloader": ">=${loader_version}",
+        "fabric-language-kotlin": ">=${kotlin_loader_version}",
+        "fabric-api": "*",
+        "minecraft": "${minecraft_version}"
+    }
+}
