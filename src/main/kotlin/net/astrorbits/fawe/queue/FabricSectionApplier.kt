@@ -1,5 +1,7 @@
 package net.astrorbits.fawe.queue
 
+import com.sk89q.worldedit.coremc.internal.CoreMcLoggingProblemReporter
+import com.sk89q.worldedit.coremc.internal.NBTConverter
 import com.sk89q.worldedit.fabric.internal.FabricWorldEdit
 import net.astrorbits.fawe.guard.RegionEditGuards
 import net.minecraft.core.BlockPos
@@ -7,9 +9,13 @@ import net.minecraft.core.SectionPos
 import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.level.block.EntityBlock
+import net.minecraft.world.level.block.entity.BlockEntity
 import net.minecraft.world.level.chunk.LevelChunk
 import net.minecraft.world.level.levelgen.Heightmap
 import net.minecraft.world.level.lighting.LightEngine
+import net.minecraft.world.level.storage.TagValueInput
+import org.enginehub.linbus.tree.LinCompoundTag
+import org.enginehub.linbus.tree.LinTagType
 import java.util.BitSet
 
 /**
@@ -17,7 +23,8 @@ import java.util.BitSet
  *
  * 不走 `LevelChunk.setBlockState`，因此不会对每个方块触发邻居更新、放置回调或形状更新。
  * 高度图、方块实体和天空光来源仍按这个区块里实际改过的方块补齐。
- * 方块的光照属性变了才按这个区块传播一次光照。只要有方块实际变化，就向正在跟踪该区块的玩家发一个区块包：光照没变时立刻发，变了则等光照任务结束后再发。
+ * 方块状态没变但带有 NBT 时，把标签载入方块实体，不重算高度图和光照。这个状态会带方块实体而实体还不在区块里时，先建一个再载入。
+ * 方块的光照属性变了才按这个区块传播一次光照。区段里有方块状态变化，或变更带有 NBT 时，向正在跟踪该区块的玩家发一个区块包：光照没变时立刻发，变了则等光照任务结束后再发。
  */
 object FabricSectionApplier {
     private val heightmaps = arrayOf(
@@ -29,7 +36,7 @@ object FabricSectionApplier {
 
     /**
      * @param snapshot 区块坐标和发起编辑的世界。
-     * @param changes 已经换成原版方块状态的变更。`vanilla` 为空时在这条线程上用平台适配器再转一次。
+     * @param changes 已经换成原版方块状态的变更。`vanilla` 为空时在这条线程上用平台适配器再转一次。`nbt` 非空时，方块实体就位后载入这份标签。
      */
     internal fun apply(snapshot: ChunkSnapshot, changes: List<PreparedChange>) {
         val level = snapshot.world.world
@@ -55,13 +62,19 @@ object FabricSectionApplier {
             val localY = change.y and 15
             val localZ = change.z and 15
             val previous = section.setBlockState(localX, localY, localZ, state, false)
-            if (previous == state) {
+            val nbt = change.nbt
+            if (previous == state && nbt == null) {
                 continue
             }
             touchedSections.set(sectionIndex)
-            writeSurroundings(chunk, change.x, change.y, change.z, localX, localZ, previous, state)
-            if (LightEngine.hasDifferentLightProperties(previous, state)) {
-                lightChanged = true
+            if (previous != state) {
+                writeSurroundings(chunk, change.x, change.y, change.z, localX, localZ, previous, state)
+                if (LightEngine.hasDifferentLightProperties(previous, state)) {
+                    lightChanged = true
+                }
+            }
+            if (nbt != null) {
+                loadBlockEntity(level, chunk, change.x, change.y, change.z, state, nbt)
             }
         }
         if (touchedSections.isEmpty) {
@@ -96,6 +109,65 @@ object FabricSectionApplier {
             }
         }
         chunk.getSkyLightSources().update(chunk, localX, y, localZ)
+    }
+
+    /**
+     * 把已经取到的标签载入这个位置的方块实体。
+     *
+     * `x`、`y`、`z` 写成目标坐标。标签里的 `id` 不是空白时写回 `id`。
+     * 然后用 [net.minecraft.world.level.storage.TagValueInput] 和 `loadWithComponents` 载入，不触发邻居更新。
+     * 方块实体还不存在、且这个状态的方块是 [EntityBlock] 时，先建一个空的再载入。建不出来时不载入，区段里的方块状态保持刚才的写入。
+     *
+     * @param level 方块所在的服务器世界，提供注册表。
+     * @param chunk 目标区块。方块实体从这里读取或放回。
+     * @param x 目标方块 X 坐标。
+     * @param y 目标方块 Y 坐标。
+     * @param z 目标方块 Z 坐标。
+     * @param state 这一格已经写入区段的原版方块状态。
+     * @param nbt 队列里保存的标签。载入前总会把 `x`、`y`、`z` 写成目标坐标；`id` 不是空白时才写回。
+     */
+    private fun loadBlockEntity(
+        level: ServerLevel,
+        chunk: LevelChunk,
+        x: Int,
+        y: Int,
+        z: Int,
+        state: net.minecraft.world.level.block.state.BlockState,
+        nbt: LinCompoundTag,
+    ) {
+        val pos = BlockPos(x, y, z)
+        val entity = chunk.getBlockEntity(pos, LevelChunk.EntityCreationType.CHECK)
+            ?: createBlockEntity(chunk, pos, state)
+            ?: return
+        val builder = nbt.toBuilder()
+            .putInt("x", x)
+            .putInt("y", y)
+            .putInt("z", z)
+        val nbtId = nbt.findTag("id", LinTagType.stringTag())?.value() ?: ""
+        if (nbtId.isNotBlank()) {
+            builder.putString("id", nbtId)
+        }
+        val nativeTag = NBTConverter.toNative(builder.build())
+        CoreMcLoggingProblemReporter.with({ "loading tile entity at $pos" }) { reporter ->
+            val input = TagValueInput.create(reporter, level.registryAccess(), nativeTag)
+            entity.loadWithComponents(input)
+            entity.setChanged()
+            true
+        }
+    }
+
+    private fun createBlockEntity(
+        chunk: LevelChunk,
+        pos: BlockPos,
+        state: net.minecraft.world.level.block.state.BlockState,
+    ): BlockEntity? {
+        val block = state.block
+        if (block !is EntityBlock) {
+            return null
+        }
+        val created = block.newBlockEntity(pos, state) ?: return null
+        chunk.setBlockEntity(created)
+        return created
     }
 
     private fun updateSectionEmptiness(

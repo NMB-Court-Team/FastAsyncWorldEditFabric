@@ -21,6 +21,7 @@ package com.sk89q.worldedit;
 
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.InlineMe;
+import com.sk89q.worldedit.coremc.internal.CoreMcWorld;
 import com.sk89q.worldedit.entity.BaseEntity;
 import com.sk89q.worldedit.entity.Entity;
 import com.sk89q.worldedit.event.extent.EditSessionEvent;
@@ -129,6 +130,7 @@ import com.sk89q.worldedit.world.block.BlockType;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import com.sk89q.worldedit.world.generation.TreeType;
 import com.sk89q.worldedit.world.registry.LegacyMapper;
+import net.astrorbits.fawe.queue.ChunkWriteQueue;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayDeque;
@@ -722,8 +724,24 @@ public class EditSession implements Extent, AutoCloseable {
         return world.getBlock(position);
     }
 
+    /**
+     * 读取方块状态和方块实体 NBT。
+     *
+     * 在服务器线程调用。这个坐标在 {@link ChunkWriteQueue} 的待写记录或正在提交的记录里时，返回那一份方块。
+     * 该坐标没有这类记录时读取世界，即使同一区块的其它方块正在提交。世界不是 {@link CoreMcWorld} 时不查队列。
+     * 粘贴尚未写入区块时，通过这个方法仍能读到队列里的容器内容。
+     *
+     * @param position 方块位置
+     * @return 方块。有方块实体数据时带上 NBT，没有时 NBT 为空
+     */
     @Override
     public BaseBlock getFullBlock(BlockVector3 position) {
+        if (world instanceof CoreMcWorld coreWorld) {
+            BaseBlock queued = ChunkWriteQueue.get(coreWorld, position.x(), position.y(), position.z());
+            if (queued != null) {
+                return queued;
+            }
+        }
         return world.getFullBlock(position);
     }
 

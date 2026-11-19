@@ -66,6 +66,7 @@ import com.sk89q.worldedit.world.generation.WorldEditTreeGeneration;
 import com.sk89q.worldedit.world.item.ItemTypes;
 import com.sk89q.worldedit.world.weather.WeatherType;
 import com.sk89q.worldedit.world.weather.WeatherTypes;
+import net.astrorbits.fawe.queue.ChunkWriteQueue;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
@@ -719,6 +720,8 @@ public final class CoreMcWorld extends AbstractWorld {
         if (entityType.isEmpty()) {
             return null;
         }
+        // 队列里的方块还没写入区段时，重力实体会先开始下落，并穿过随后才出现的支撑方块。
+        ChunkWriteQueue.flush(this);
         LinCompoundTag linTag = entity.getNbt();
         CompoundTag tag;
         if (linTag != null) {

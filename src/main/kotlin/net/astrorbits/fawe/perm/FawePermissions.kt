@@ -6,7 +6,7 @@ import java.util.UUID
 /**
  * 本模组的权限目录和查询入口。
  *
- * 对象初始化时写入第一阶段用到的节点。AzamcBasic 第一次调用 [all] 就会触发这次初始化，
+ * 对象初始化时写入本模组开放的权限节点。AzamcBasic 第一次调用 [all] 就会触发这次初始化，
  * 不依赖两个模组的 `onInitialize` 谁先谁后。本模组不引用 AzamcBasic。
  *
  * 未调用 [bind] 时，[has] 要求玩家是 OP。控制台不经过这里。已绑定后，[has] 只调用装入的查询。
@@ -44,6 +44,70 @@ object FawePermissions {
                 description = "撤销自己的 WorldEdit 编辑",
             ),
         )
+        register(
+            FawePermissionNode(
+                id = "worldedit.region.replace",
+                defaultGroup = FawePermissionDefault.ADMIN,
+                description = "使用 //replace 替换选区内的方块",
+            ),
+        )
+        register(
+            FawePermissionNode(
+                id = "worldedit.region.walls",
+                defaultGroup = FawePermissionDefault.ADMIN,
+                description = "使用 //walls 生成选区四面墙",
+            ),
+        )
+        register(
+            FawePermissionNode(
+                id = "worldedit.region.faces",
+                defaultGroup = FawePermissionDefault.ADMIN,
+                description = "使用 //faces 生成选区表面",
+            ),
+        )
+        register(
+            FawePermissionNode(
+                id = "worldedit.region.overlay",
+                defaultGroup = FawePermissionDefault.ADMIN,
+                description = "使用 //overlay 在选区内已有方块的上方放一层",
+            ),
+        )
+        register(
+            FawePermissionNode(
+                id = "worldedit.clipboard.copy",
+                defaultGroup = FawePermissionDefault.ADMIN,
+                description = "使用 //copy 复制选区",
+            ),
+        )
+        register(
+            FawePermissionNode(
+                id = "worldedit.clipboard.cut",
+                defaultGroup = FawePermissionDefault.ADMIN,
+                description = "使用 //cut 剪切选区",
+            ),
+        )
+        register(
+            FawePermissionNode(
+                id = "worldedit.clipboard.paste",
+                defaultGroup = FawePermissionDefault.ADMIN,
+                description = "使用 //paste 粘贴剪贴板",
+            ),
+        )
+        register(
+            FawePermissionNode(
+                id = "worldedit.history.redo",
+                defaultGroup = FawePermissionDefault.ADMIN,
+                description = "重做 WorldEdit 编辑",
+            ),
+        )
+        register(
+            FawePermissionNode(
+                id = "worldedit.history.redo.self",
+                defaultGroup = FawePermissionDefault.ADMIN,
+                parentId = "worldedit.history.redo",
+                description = "重做自己的 WorldEdit 编辑",
+            ),
+        )
     }
 
     /**
@@ -64,7 +128,7 @@ object FawePermissions {
     /**
      * 当前已登记的节点，按登记顺序排列。
      *
-     * 第一次调用会初始化本对象并写入第一阶段节点。
+     * 第一次调用会初始化本对象并写入本模组开放的权限节点。
      *
      * @return 目录快照。之后再 [register] 不会改动这次返回的列表。
      */
