@@ -26,3 +26,5 @@ run*
 # Upstream trees kept locally for reference. Do not publish them.
 WorldEdit-7.4.5/
 FastAsyncWorldEdit-main/
+
+.kotlin

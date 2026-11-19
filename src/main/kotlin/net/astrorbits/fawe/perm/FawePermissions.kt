@@ -93,6 +93,57 @@ object FawePermissions {
                 description = "使用 //paste 粘贴剪贴板",
             ),
         )
+        // //schem load 与 //schem save 的权限条件是两个节点满足其一。
+        // 两个节点都放进目录后，外部权限系统才能分别授予。
+        register(
+            FawePermissionNode(
+                id = "worldedit.clipboard.load",
+                defaultGroup = FawePermissionDefault.ADMIN,
+                description = "使用 //schem load 把原理图加载进剪贴板。与 worldedit.schematic.load 满足其一即可",
+            ),
+        )
+        register(
+            FawePermissionNode(
+                id = "worldedit.schematic.load",
+                defaultGroup = FawePermissionDefault.ADMIN,
+                description = "使用 //schem load 把原理图加载进剪贴板。与 worldedit.clipboard.load 满足其一即可",
+            ),
+        )
+        register(
+            FawePermissionNode(
+                id = "worldedit.clipboard.save",
+                defaultGroup = FawePermissionDefault.ADMIN,
+                description = "使用 //schem save 把剪贴板保存为原理图。与 worldedit.schematic.save 满足其一即可",
+            ),
+        )
+        register(
+            FawePermissionNode(
+                id = "worldedit.schematic.save",
+                defaultGroup = FawePermissionDefault.ADMIN,
+                description = "使用 //schem save 把剪贴板保存为原理图。与 worldedit.clipboard.save 满足其一即可",
+            ),
+        )
+        register(
+            FawePermissionNode(
+                id = "worldedit.schematic.delete",
+                defaultGroup = FawePermissionDefault.ADMIN,
+                description = "使用 //schem delete 删除原理图。覆盖已有文件的 //schem save -f 也检查这个节点",
+            ),
+        )
+        register(
+            FawePermissionNode(
+                id = "worldedit.schematic.list",
+                defaultGroup = FawePermissionDefault.ADMIN,
+                description = "使用 //schem list 列出已保存的原理图",
+            ),
+        )
+        register(
+            FawePermissionNode(
+                id = "worldedit.schematic.formats",
+                defaultGroup = FawePermissionDefault.ADMIN,
+                description = "使用 //schem formats 列出可用的原理图格式",
+            ),
+        )
         register(
             FawePermissionNode(
                 id = "worldedit.history.redo",

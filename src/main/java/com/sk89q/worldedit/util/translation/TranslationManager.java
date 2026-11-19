@@ -213,11 +213,7 @@ public class TranslationManager {
         try {
             loadTranslations(locale);
         } catch (Exception t) {
-            LOGGER.warn(
-                "Failed to load translations"
-                    + ", locale=" + locale,
-                t
-            );
+            LOGGER.warn("Failed to load translations, locale={}", locale, t);
         } finally {
             ourFuture.complete(null);
             loadedLocales.add(locale);
@@ -238,9 +234,13 @@ public class TranslationManager {
             try (InputStream in = internalStrings.openStream()) {
                 putTranslationData(entries, in);
             }
+            // 默认语言的 localePath 固定是 strings.json。再按语言标签读 jar，
+            // 该语言自己的键才能盖过英文底表。
+            loadBundledLocaleFile(entries, languageTagPath(locale));
         } else {
             // load from the internal zip for all other locales
             putTranslationData(entries, this.internalZipRoot.resolve(localePath));
+            loadBundledLocaleFile(entries, localePath);
         }
         if (this.userProvidedZipRoot != null) {
             putTranslationData(entries, this.userProvidedZipRoot.resolve(localePath));
@@ -253,13 +253,7 @@ public class TranslationManager {
             try {
                 format = new MessageFormat(entry.getValue().replace("'", "''"), locale);
             } catch (IllegalArgumentException e) {
-                LOGGER.warn(
-                    "Failed to load translation"
-                        + ", locale=" + locale
-                        + ", key=" + entry.getKey()
-                        + ", value=" + entry.getValue(),
-                    e
-                );
+                LOGGER.warn("Failed to load translation, locale={}, key={}, value={}", locale, entry.getKey(), entry.getValue(), e);
                 continue;
             }
             translationTable.put(
@@ -275,8 +269,49 @@ public class TranslationManager {
         if (defaultLocale.equals(locale)) {
             return "strings.json";
         }
+        String tagged = languageTagPath(locale);
+        return tagged == null ? "strings.json" : tagged;
+    }
+
+    /**
+     * 返回该语言在 {@code lang/} 下的文件路径。
+     * <p>
+     * 路径形如 {@code zh-CN/strings.json}。语言标签为空时返回 {@code null}，
+     * 避免拼出以 {@code /} 开头的资源名。
+     *
+     * @param locale 玩家或配置使用的语言
+     * @return 相对 {@code lang/} 的路径；语言标签为空时返回 {@code null}
+     */
+    @Nullable
+    private static String languageTagPath(Locale locale) {
+        if (locale.getLanguage().isEmpty()) {
+            return null;
+        }
         String country = locale.getCountry().isEmpty() ? "" : "-" + locale.getCountry();
         return locale.getLanguage() + country + "/strings.json";
+    }
+
+    /**
+     * 把 jar 内的语言文件合并进当前表。
+     * <p>
+     * 资源名是 {@code lang/} 加上 {@code localePath}。文件不存在时不改表。
+     * 同名键以后读入的值为准，因此要在 i18n.zip 或英文 {@code strings.json} 之后调用。
+     *
+     * @param entries 正在组装的翻译表，就地写入
+     * @param localePath 相对 {@code lang/} 的路径；为 {@code null} 或空白时跳过
+     * @throws IOException 资源存在但读取失败时抛出
+     */
+    private void loadBundledLocaleFile(Map<String, String> entries, @Nullable String localePath) throws IOException {
+        if (localePath == null || localePath.isBlank()) {
+            return;
+        }
+        URL bundled = resourceLoader.getRootResource("lang/" + localePath);
+        if (bundled == null) {
+            return;
+        }
+        try (InputStream in = bundled.openStream()) {
+            putTranslationData(entries, in);
+        }
     }
 
     private void putTranslationData(Map<String, String> data, Path source) throws IOException {

@@ -44,6 +44,7 @@ import com.sk89q.worldedit.internal.schematic.SchematicsManager;
 import com.sk89q.worldedit.internal.util.LogManagerCompat;
 import com.sk89q.worldedit.math.transform.Transform;
 import com.sk89q.worldedit.session.ClipboardHolder;
+import com.sk89q.worldedit.util.formatting.WorldEditText;
 import com.sk89q.worldedit.util.formatting.component.CodeFormat;
 import com.sk89q.worldedit.util.formatting.component.ErrorFormat;
 import com.sk89q.worldedit.util.formatting.component.PaginationBox;
@@ -77,6 +78,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 
@@ -136,10 +138,10 @@ public class SchematicCommands {
                 .setDelayMessage(TranslatableComponent.of("worldedit.schematic.load.loading"))
                 .setWorkingMessage(TranslatableComponent.of("worldedit.schematic.load.still-loading"))
                 .onSuccess(TextComponent.of(filename, TextColor.GOLD)
-                                .append(TextComponent.of(" loaded. Paste it with ", TextColor.LIGHT_PURPLE))
+                                .append(TranslatableComponent.of("worldedit.schematic.load.loaded-suffix").color(TextColor.LIGHT_PURPLE))
                                 .append(CodeFormat.wrap("//paste").clickEvent(ClickEvent.of(ClickEvent.Action.SUGGEST_COMMAND, "//paste"))),
                         session::setClipboard)
-                .onFailure("Failed to load schematic", worldEdit.getPlatformManager().getPlatformCommandManager().getExceptionConverter())
+                .onFailure(TranslatableComponent.of("worldedit.schematic.load.failed"), worldEdit.getPlatformManager().getPlatformCommandManager().getExceptionConverter())
                 .buildAndExecNoReturnValue(worldEdit.getExecutorService());
     }
 
@@ -169,7 +171,9 @@ public class SchematicCommands {
         boolean overwrite = f.exists();
         if (overwrite) {
             if (!actor.hasPermission("worldedit.schematic.delete")) {
-                throw new StopExecutionException(TextComponent.of("That schematic already exists!"));
+                throw new StopExecutionException(TextComponent.of(WorldEditText.reduceToText(
+                    TranslatableComponent.of("worldedit.schematic.save.exists-no-permission"),
+                    actor.getLocale())));
             }
             if (!allowOverwrite) {
                 actor.printError(TranslatableComponent.of("worldedit.schematic.save.already-exists"));
@@ -193,8 +197,10 @@ public class SchematicCommands {
                 .registerWithSupervisor(worldEdit.getSupervisor(), "Saving schematic " + filename)
                 .setDelayMessage(TranslatableComponent.of("worldedit.schematic.save.saving"))
                 .setWorkingMessage(TranslatableComponent.of("worldedit.schematic.save.still-saving"))
-                .onSuccess(filename + " saved" + (overwrite ? " (overwriting previous file)." : "."), null)
-                .onFailure("Failed to save schematic", worldEdit.getPlatformManager().getPlatformCommandManager().getExceptionConverter())
+                .onSuccess(TranslatableComponent.of(
+                        overwrite ? "worldedit.schematic.save.saved-overwrite" : "worldedit.schematic.save.saved",
+                        TextComponent.of(filename)).color(TextColor.LIGHT_PURPLE), null)
+                .onFailure(TranslatableComponent.of("worldedit.schematic.save.failed"), worldEdit.getPlatformManager().getPlatformCommandManager().getExceptionConverter())
                 .buildAndExecNoReturnValue(worldEdit.getExecutorService());
     }
 
@@ -270,9 +276,9 @@ public class SchematicCommands {
 
         actor.printInfo(TranslatableComponent.of("worldedit.schematic.delete.deleted", TextComponent.of(filename)));
         try {
-            LOGGER.info(actor.getName() + " deleted " + f.getCanonicalPath());
+            LOGGER.info("{} deleted {}", actor.getName(), f.getCanonicalPath());
         } catch (IOException e) {
-            LOGGER.info(actor.getName() + " deleted " + f.getAbsolutePath());
+            LOGGER.info("{} deleted {}", actor.getName(), f.getAbsolutePath());
         }
     }
 
@@ -316,7 +322,9 @@ public class SchematicCommands {
                      @Switch(name = 'n', desc = "Sort by date, newest first")
                          boolean newFirst) {
         if (oldFirst && newFirst) {
-            throw new StopExecutionException(TextComponent.of("Cannot sort by oldest and newest."));
+            throw new StopExecutionException(TextComponent.of(WorldEditText.reduceToText(
+                TranslatableComponent.of("worldedit.schematic.list.cannot-sort-both"),
+                actor.getLocale())));
         }
         Comparator<Path> pathComparator;
         String flag;
@@ -334,34 +342,27 @@ public class SchematicCommands {
                 ? "//schem list -p %page%" + flag : null;
 
         WorldEditAsyncCommandBuilder.createAndSendMessage(actor,
-                new SchematicListTask(pathComparator, page, pageCommand),
-                SubtleFormat.wrap("(Please wait... gathering schematic list.)"));
+                new SchematicListTask(actor.getLocale(), pathComparator, page, pageCommand),
+                SubtleFormat.wrap(WorldEditText.reduceToText(
+                    TranslatableComponent.of("worldedit.schematic.list.loading"),
+                    actor.getLocale())));
     }
 
-    private static class SchematicLoadTask implements Callable<ClipboardHolder> {
-        private final Actor actor;
-        private final File file;
-        private final ClipboardFormat format;
-
-        SchematicLoadTask(Actor actor, File file, ClipboardFormat format) {
-            this.actor = actor;
-            this.file = file;
-            this.format = format;
-        }
+    private record SchematicLoadTask(Actor actor, File file, ClipboardFormat format) implements Callable<ClipboardHolder> {
 
         @Override
-        public ClipboardHolder call() throws Exception {
-            try (Closer closer = Closer.create()) {
-                FileInputStream fis = closer.register(new FileInputStream(file));
-                BufferedInputStream bis = closer.register(new BufferedInputStream(fis));
-                ClipboardReader reader = closer.register(format.getReader(bis));
+            public ClipboardHolder call() throws Exception {
+                try (Closer closer = Closer.create()) {
+                    FileInputStream fis = closer.register(new FileInputStream(file));
+                    BufferedInputStream bis = closer.register(new BufferedInputStream(fis));
+                    ClipboardReader reader = closer.register(format.getReader(bis));
 
-                Clipboard clipboard = reader.read();
-                LOGGER.info(actor.getName() + " loaded " + file.getCanonicalPath());
-                return new ClipboardHolder(clipboard);
+                    Clipboard clipboard = reader.read();
+                    LOGGER.info("{} loaded {}", actor.getName(), file.getCanonicalPath());
+                    return new ClipboardHolder(clipboard);
+                }
             }
         }
-    }
 
     private abstract static class SchematicOutputTask<T> implements Callable<T> {
         final ClipboardFormat format;
@@ -403,7 +404,7 @@ public class SchematicCommands {
             try {
                 writeToOutputStream(new FileOutputStream(file));
                 WorldEdit.getInstance().getSchematicsManager().update();
-                LOGGER.info(actor.getName() + " saved " + file.getCanonicalPath() + (overwrite ? " (overwriting previous file)" : ""));
+                LOGGER.info("{} saved {}{}", actor.getName(), file.getCanonicalPath(), overwrite ? " (overwriting previous file)" : "");
             } catch (IOException e) {
                 file.delete();
                 throw new CommandException(TextComponent.of(e.getMessage()), e, ImmutableList.of());
@@ -440,42 +441,48 @@ public class SchematicCommands {
         }
     }
 
-    private static class SchematicListTask implements Callable<Component> {
-        private final Comparator<Path> pathComparator;
-        private final int page;
-        private final String pageCommand;
-
-        SchematicListTask(Comparator<Path> pathComparator, int page, String pageCommand) {
-            this.pathComparator = pathComparator;
-            this.page = page;
-            this.pageCommand = pageCommand;
-        }
+    private record SchematicListTask(
+        Locale locale,
+        Comparator<Path> pathComparator,
+        int page,
+        String pageCommand
+    ) implements Callable<Component> {
 
         @Override
-        public Component call() throws Exception {
-            SchematicsManager schematicsManager = WorldEdit.getInstance().getSchematicsManager();
-            // Copy this to a mutable list, we're sorting it below.
-            List<Path> fileList = new ArrayList<>(schematicsManager.getSchematicPaths());
+            public Component call() throws Exception {
+                SchematicsManager schematicsManager = WorldEdit.getInstance().getSchematicsManager();
+                // Copy this to a mutable list, we're sorting it below.
+                List<Path> fileList = new ArrayList<>(schematicsManager.getSchematicPaths());
 
-            if (fileList.isEmpty()) {
-                return ErrorFormat.wrap("No schematics found.");
+                if (fileList.isEmpty()) {
+                    return ErrorFormat.wrap(WorldEditText.reduceToText(
+                        TranslatableComponent.of("worldedit.schematic.list.empty"),
+                        locale));
+                }
+
+                fileList.sort(pathComparator);
+
+                PaginationBox paginationBox = new SchematicPaginationBox(schematicsManager.getRoot(), fileList, pageCommand, locale);
+                return paginationBox.create(page);
             }
-
-            fileList.sort(pathComparator);
-
-            PaginationBox paginationBox = new SchematicPaginationBox(schematicsManager.getRoot(), fileList, pageCommand);
-            return paginationBox.create(page);
         }
-    }
 
     private static class SchematicPaginationBox extends PaginationBox {
         private final Path rootDir;
         private final List<Path> files;
+        private final String clickToLoad;
+        private final String unknownFormat;
 
-        SchematicPaginationBox(Path rootDir, List<Path> files, String pageCommand) {
-            super("Available schematics", pageCommand);
+        SchematicPaginationBox(Path rootDir, List<Path> files, String pageCommand, Locale locale) {
+            super(WorldEditText.reduceToText(TranslatableComponent.of("worldedit.schematic.list.title"), locale), pageCommand);
             this.rootDir = rootDir;
             this.files = files;
+            this.clickToLoad = WorldEditText.reduceToText(
+                TranslatableComponent.of("worldedit.schematic.list.click-to-load"),
+                locale);
+            this.unknownFormat = WorldEditText.reduceToText(
+                TranslatableComponent.of("worldedit.schematic.list.unknown-format"),
+                locale);
         }
 
         @Override
@@ -488,7 +495,7 @@ public class SchematicCommands {
                 .stream()
                 .findFirst()
                 .map(ClipboardFormat::getName)
-                .orElse("Unknown");
+                .orElse(unknownFormat);
 
             boolean inRoot = file.getParent().equals(rootDir);
 
@@ -501,7 +508,7 @@ public class SchematicCommands {
                     .append(TextComponent.of("[L]")
                             .color(TextColor.GOLD)
                             .clickEvent(ClickEvent.of(ClickEvent.Action.RUN_COMMAND, "/schem load \"" + path + "\""))
-                            .hoverEvent(HoverEvent.of(HoverEvent.Action.SHOW_TEXT, TextComponent.of("Click to load"))))
+                            .hoverEvent(HoverEvent.of(HoverEvent.Action.SHOW_TEXT, TextComponent.of(clickToLoad))))
                     .append(TextComponent.space())
                     .append(TextComponent.of(path)
                             .color(TextColor.DARK_GREEN)
