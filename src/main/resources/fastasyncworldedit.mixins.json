@@ -1,9 +1,15 @@
 {
     "required": true,
     "minVersion": "0.8",
-    "package": "net.astrorbits.fawe.mixin",
+    "package": "com.sk89q.worldedit.coremc.mixin",
     "compatibilityLevel": "JAVA_25",
     "mixins": [
+        "AccessorChunkMap",
+        "AccessorClientboundBlockEntityDataPacket",
+        "AccessorCommandSourceStack",
+        "AccessorMinecraftServer",
+        "AccessorServerPlayerGameMode",
+        "MixinServerGamePacketListenerImpl"
     ],
     "injectors": {
         "defaultRequire": 1
