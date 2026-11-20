@@ -142,6 +142,9 @@ tasks.named<ShadowJar>("shadowJar") {
     enabled = false
 }
 
+val relocated = files(worldeditLibsJar.flatMap { it.archiveFile })
+relocated.builtBy(worldeditLibsJar)
+
 dependencies {
     minecraft("com.mojang:minecraft:${project.property("minecraft_version")}")
     implementation("net.fabricmc:fabric-loader:${project.property("loader_version")}")
@@ -150,10 +153,7 @@ dependencies {
 
     compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
 
-    val relocated = files(worldeditLibsJar.flatMap { it.archiveFile })
-    relocated.builtBy(worldeditLibsJar)
     implementation(relocated)
-    include(relocated)
     annotationProcessor(relocated)
 
     worldeditRelocate("net.kyori:text-api:3.0.4")
@@ -180,10 +180,10 @@ dependencies {
     compileOnly("de.schlichtherle:truezip:6.8.4")
 
     implementation(platform("org.enginehub.lin-bus:lin-bus-bom:0.2.0"))
-    include(implementation("org.enginehub.lin-bus:lin-bus-common")!!)
-    include(implementation("org.enginehub.lin-bus:lin-bus-stream")!!)
-    include(implementation("org.enginehub.lin-bus:lin-bus-tree")!!)
-    include(implementation("org.enginehub.lin-bus.format:lin-bus-format-snbt")!!)
+    include(implementation("org.enginehub.lin-bus:lin-bus-common:0.2.0")!!)
+    include(implementation("org.enginehub.lin-bus:lin-bus-stream:0.2.0")!!)
+    include(implementation("org.enginehub.lin-bus:lin-bus-tree:0.2.0")!!)
+    include(implementation("org.enginehub.lin-bus.format:lin-bus-format-snbt:0.2.0")!!)
 
     include(implementation("org.mozilla:rhino-runtime:1.7.13")!!)
     include(implementation("com.sk89q:jchronic:0.2.4a")!!)
@@ -242,6 +242,11 @@ tasks.jar {
         rename { "${it}_${project.base.archivesName.get()}" }
     }
     from("NOTICE.txt")
+    from(relocated.map { zipTree(it) }) {
+        exclude("META-INF/MANIFEST.MF")
+        exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
+        exclude("com/sk89q/worldedit/util/formatting/text/serializer/gson/StyleSerializer*.class")
+    }
 }
 
 publishing {
