@@ -6,9 +6,6 @@ import com.sk89q.worldedit.util.formatting.text.Component
 import com.sk89q.worldedit.util.formatting.text.TextComponent
 import com.sk89q.worldedit.util.formatting.text.TranslatableComponent
 import net.astrorbits.fawe.config.FaweConfig
-import net.astrorbits.fawe.perm.FawePermissionDefault
-import net.astrorbits.fawe.perm.FawePermissionNode
-import net.astrorbits.fawe.perm.FawePermissions
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
@@ -59,29 +56,6 @@ object FaweLimits {
     @JvmStatic
     fun clearOverride(uniqueId: UUID) {
         overrides.remove(uniqueId)
-    }
-
-    /**
-     * 为 `unlimited` 和当前每个限额组登记权限节点。重复登记会保留先写入的说明。
-     */
-    fun registerNodes() {
-        FaweConfig.ensureLoaded()
-        FawePermissions.register(
-            FawePermissionNode(
-                id = UNLIMITED,
-                defaultGroup = FawePermissionDefault.ADMIN,
-                description = "不受 fastasyncworldedit.json 里的编辑限额约束",
-            ),
-        )
-        for (name in FaweConfig.limitGroups().keys) {
-            FawePermissions.register(
-                FawePermissionNode(
-                    id = "fawe.limit.$name",
-                    defaultGroup = FawePermissionDefault.ADMIN,
-                    description = "使用限额组 $name",
-                ),
-            )
-        }
     }
 
     /**

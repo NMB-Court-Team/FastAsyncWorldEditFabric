@@ -109,7 +109,6 @@ object FaweConfig {
             loaded = sanitized
             loadedOnce = true
             FaweHistory.setRecord(sanitized.history)
-            FaweLimits.registerNodes()
             FastAsyncWorldEditMain.LOGGER.info(
                 "Loaded config: parallelism={}, chunksPerTick={}, history={}, limitGroups={}",
                 sanitized.parallelism,

@@ -6,7 +6,6 @@ import net.astrorbits.fawe.config.FaweConfig
 import net.astrorbits.fawe.history.DiskHistories
 import net.astrorbits.fawe.net.ArkitektonikaShare
 import net.astrorbits.fawe.guard.RegionEditGuards
-import net.astrorbits.fawe.perm.FawePermissions
 import net.astrorbits.fawe.queue.ChunkWriteQueue
 import net.astrorbits.fawe.queue.FaweEditSessions
 import net.fabricmc.api.ModInitializer
@@ -24,7 +23,6 @@ object FastAsyncWorldEditMain : ModInitializer {
         FaweConfig.load()
         DiskHistories.purgeExpired()
         ClipboardShareDestinations.registerClipboardShareDestination(ArkitektonikaShare)
-        FawePermissions.all()
         RegionEditGuards.loadEntrypoints()
         ChunkWriteQueue.start()
         FabricWorldEdit().onInitialize()

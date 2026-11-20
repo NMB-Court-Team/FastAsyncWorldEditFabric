@@ -109,6 +109,6 @@ public class FabricWorldEdit extends CoreMcMod implements ModInitializer {
 
     @Override
     protected CoreMcPermissionsProvider createPermissionsProvider(CoreMcPlatform platform) {
-        return new FabricPermissionsProvider(super.createPermissionsProvider(platform));
+        return new FabricPermissionsProvider();
     }
 }
