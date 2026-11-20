@@ -39,6 +39,8 @@ import com.sk89q.worldedit.command.ClipboardCommands;
 import com.sk89q.worldedit.command.ClipboardCommandsRegistration;
 import com.sk89q.worldedit.command.ExpandCommands;
 import com.sk89q.worldedit.command.GeneralCommands;
+import com.sk89q.worldedit.command.FaweLimitCommands;
+import com.sk89q.worldedit.command.FaweLimitCommandsRegistration;
 import com.sk89q.worldedit.command.GenerationCommands;
 import com.sk89q.worldedit.command.GenerationCommandsRegistration;
 import com.sk89q.worldedit.command.HistoryBrowseCommands;
@@ -405,6 +407,11 @@ public final class PlatformCommandManager {
             "History files on disk",
             HistoryBrowseCommandsRegistration.builder(),
             new HistoryBrowseCommands()
+        );
+        this.registration.register(
+            commandManager,
+            FaweLimitCommandsRegistration.builder(),
+            new FaweLimitCommands(worldEdit)
         );
         this.registration.register(
             commandManager,

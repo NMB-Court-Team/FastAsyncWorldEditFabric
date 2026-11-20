@@ -9,15 +9,57 @@ import net.astrorbits.fawe.config.FaweConfig
 import net.astrorbits.fawe.perm.FawePermissionDefault
 import net.astrorbits.fawe.perm.FawePermissionNode
 import net.astrorbits.fawe.perm.FawePermissions
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * 按玩家权限合并 [FaweConfig] 里的限额组。
  *
  * 持有 `fawe.limit.unlimited` 时不封顶。否则把玩家持有的 `fawe.limit.<组名>` 按各项取较大值。
- * 一个组里小于 0 的数值表示这一项不封顶。没有任何组命中时使用 `default`。
+ * 一个组里小于 0 的数值表示这一项不叠加组上限：半径项回落到 WorldEdit 配置里的 `max-radius`/`max-brush-radius`，
+ * 其余项不封顶。没有任何组命中时使用 `default`。
+ *
+ * 通过 [setOverride] 写入的覆盖优先于权限：命中覆盖的玩家不再看 `fawe.limit.*` 权限，
+ * 直接使用覆盖组。覆盖只保存在内存里，玩家退出或服务器重启后恢复为按权限计算。
  */
 object FaweLimits {
     const val UNLIMITED: String = "fawe.limit.unlimited"
+
+    private val overrides: ConcurrentHashMap<UUID, FaweConfig.LimitGroup> = ConcurrentHashMap()
+
+    /**
+     * 把玩家的限额替换为指定组。覆盖对之后发起的编辑立即生效，与玩家权限无关。
+     *
+     * @param uniqueId 玩家 UUID。
+     * @param group 新的限额组，方法会复制它；之后修改传入对象不影响已写入的覆盖。传 null 表示清除覆盖、恢复按权限计算。
+     */
+    @JvmStatic
+    fun setOverride(uniqueId: UUID, group: FaweConfig.LimitGroup?) {
+        val copy = group?.copy()
+        if (copy == null) {
+            overrides.remove(uniqueId)
+        } else {
+            overrides[uniqueId] = copy
+        }
+    }
+
+    /**
+     * 读取玩家的限额覆盖。
+     *
+     * @return 覆盖组的副本；该玩家没有覆盖时返回 null。
+     */
+    @JvmStatic
+    fun getOverride(uniqueId: UUID): FaweConfig.LimitGroup? = overrides[uniqueId]?.copy()
+
+    /**
+     * 清除玩家的限额覆盖。
+     *
+     * @param uniqueId 玩家 UUID。
+     */
+    @JvmStatic
+    fun clearOverride(uniqueId: UUID) {
+        overrides.remove(uniqueId)
+    }
 
     /**
      * 为 `unlimited` 和当前每个限额组登记权限节点。重复登记会保留先写入的说明。
@@ -48,6 +90,9 @@ object FaweLimits {
      */
     fun resolve(actor: Actor?): FaweConfig.LimitGroup {
         FaweConfig.ensureLoaded()
+        if (actor != null) {
+            overrides[actor.uniqueId]?.let { return it.copy() }
+        }
         if (actor != null && actor.hasPermission(UNLIMITED)) {
             return unlimitedGroup()
         }

@@ -127,6 +127,24 @@ public class SessionManager {
     }
 
     /**
+     * Find the UUID of a session by its name specified by {@link SessionKey#getName()}.
+     *
+     * @param name the name
+     * @return the owner's UUID, if found, otherwise {@code null}
+     */
+    @Nullable
+    public synchronized UUID findUniqueIdByName(String name) {
+        checkNotNull(name);
+        for (Map.Entry<UUID, SessionHolder> entry : sessions.entrySet()) {
+            if (name.equals(entry.getValue().key.getName())) {
+                return entry.getKey();
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Gets the session for an owner and return it if it exists, otherwise
      * return {@code null}.
      *

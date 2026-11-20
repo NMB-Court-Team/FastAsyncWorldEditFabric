@@ -48,6 +48,7 @@ import com.sk89q.worldedit.world.generation.StructureType;
 import com.sk89q.worldedit.world.generation.TreeType;
 import com.sk89q.worldedit.world.item.ItemCategory;
 import com.sk89q.worldedit.world.item.ItemType;
+import net.astrorbits.fawe.limit.FaweLimits;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -338,6 +339,7 @@ public abstract class CoreMcMod {
             return;
         }
         debouncer.clearInteraction(platform.getAdapter().fromNativePlayer(player));
+        FaweLimits.clearOverride(player.getUUID());
 
         WorldEdit.getInstance().getEventBus()
             .post(new SessionIdleEvent(new CoreMcPlayer.SessionKeyImpl(player)));
