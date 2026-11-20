@@ -8,7 +8,7 @@ import com.sk89q.worldedit.util.eventbus.Subscribe
 /**
  * 在 ChangeSet 内侧插入 [QueuedExtent]。
  *
- * `BEFORE_CHANGE` 位于内存历史的里面：历史先记下旧方块，再由队列写入。
+ * `BEFORE_CHANGE` 位于磁盘历史的里面：历史先记下旧方块，再由队列写入。
  * `//undo` 重放走 `bypassHistory`，仍然经过这一层。
  */
 object FaweEditSessions {

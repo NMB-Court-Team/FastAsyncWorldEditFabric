@@ -25,4 +25,21 @@ package com.sk89q.worldedit;
  */
 public class MaxRadiusException extends WorldEditException {
 
+    private final int allowedRadius;
+
+    public MaxRadiusException() {
+        this(-1);
+    }
+
+    /**
+     * @param allowedRadius the effective maximum radius that was exceeded, or {@code -1} to use the configuration value
+     */
+    public MaxRadiusException(int allowedRadius) {
+        this.allowedRadius = allowedRadius;
+    }
+
+    public int getAllowedRadius() {
+        return allowedRadius;
+    }
+
 }

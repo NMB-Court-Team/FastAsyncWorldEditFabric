@@ -681,26 +681,6 @@ public class BrushCommands {
     }
 
     @Command(
-        name = "erode",
-        desc = "Erode preset for morph brush, erodes blocks in the area"
-    )
-    @CommandPermissions("worldedit.brush.morph")
-    public void erode(Player player, LocalSession session,
-                      @Arg(desc = "The size of the brush", def = "5")
-                          double brushSize) throws WorldEditException {
-        worldEdit.checkMaxBrushRadius(brushSize);
-        BrushTool tool = session.forceBrush(
-            player.getItemInHand(HandSide.MAIN_HAND).getType(),
-            new MorphBrush(2, 1, 5, 1),
-            "worldedit.brush.morph"
-        );
-        tool.setSize(brushSize);
-
-        player.printInfo(TranslatableComponent.of("worldedit.brush.morph.equip", TextComponent.of((int) brushSize)));
-        ToolCommands.sendUnbindInstruction(player, UNBIND_COMMAND_COMPONENT);
-    }
-
-    @Command(
         name = "dilate",
         desc = "Dilate preset for morph brush, dilates blocks in the area"
     )

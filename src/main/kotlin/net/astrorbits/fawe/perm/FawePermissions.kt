@@ -1,5 +1,6 @@
 package net.astrorbits.fawe.perm
 
+import net.astrorbits.fawe.limit.FaweLimits
 import net.minecraft.server.level.ServerPlayer
 import java.util.UUID
 
@@ -159,6 +160,8 @@ object FawePermissions {
                 description = "重做自己的 WorldEdit 编辑",
             ),
         )
+        FaweExtraPermissions.register()
+        FaweLimits.registerNodes()
     }
 
     /**

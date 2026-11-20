@@ -181,7 +181,7 @@ public class SessionManager {
                 setDefaultWand(sessionItem, config.wandItem, session, new SelectionWand());
             } catch (InvalidToolBindException e) {
                 if (warnedInvalidTool.add("selwand")) {
-                    LOGGER.warn("Invalid selection wand tool set in config. Tool will not be assigned: " + e.getItemType());
+                    LOGGER.warn("Invalid selection wand tool set in config. Tool will not be assigned: {}", e.getItemType());
                 }
             }
             try {
@@ -189,7 +189,7 @@ public class SessionManager {
                 setDefaultWand(sessionItem, config.navigationWand, session, new NavigationWand());
             } catch (InvalidToolBindException e) {
                 if (warnedInvalidTool.add("navwand")) {
-                    LOGGER.warn("Invalid navigation wand tool set in config. Tool will not be assigned: " + e.getItemType());
+                    LOGGER.warn("Invalid navigation wand tool set in config. Tool will not be assigned: {}", e.getItemType());
                 }
             }
             session.compareAndResetDirty();
@@ -204,6 +204,9 @@ public class SessionManager {
         }
         if (shouldBoundLimit(owner, "worldedit.timeout.unrestricted", session.getTimeout(), config.maxCalculationTimeout)) {
             session.setTimeout(config.maxCalculationTimeout);
+        }
+        if (owner instanceof com.sk89q.worldedit.extension.platform.Actor actor) {
+            session.setTimeout(net.astrorbits.fawe.limit.FaweLimits.expressionTimeout(actor, session.getTimeout()));
         }
 
         // Have the session use inventory if it's enabled and the owner
@@ -262,7 +265,7 @@ public class SessionManager {
                     try {
                         store.save(getKey(key), entry.getValue());
                     } catch (IOException e) {
-                        LOGGER.warn("Failed to write session for UUID " + getKey(key), e);
+                        LOGGER.warn("Failed to write session for UUID {}", getKey(key), e);
                     }
                 }
             }

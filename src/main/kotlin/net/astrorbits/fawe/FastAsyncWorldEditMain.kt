@@ -1,7 +1,10 @@
 package net.astrorbits.fawe
 
 import com.sk89q.worldedit.fabric.internal.FabricWorldEdit
+import com.sk89q.worldedit.extent.clipboard.io.share.ClipboardShareDestinations
 import net.astrorbits.fawe.config.FaweConfig
+import net.astrorbits.fawe.history.DiskHistories
+import net.astrorbits.fawe.net.ArkitektonikaShare
 import net.astrorbits.fawe.guard.RegionEditGuards
 import net.astrorbits.fawe.perm.FawePermissions
 import net.astrorbits.fawe.queue.ChunkWriteQueue
@@ -19,6 +22,8 @@ object FastAsyncWorldEditMain : ModInitializer {
 
     override fun onInitialize() {
         FaweConfig.load()
+        DiskHistories.purgeExpired()
+        ClipboardShareDestinations.registerClipboardShareDestination(ArkitektonikaShare)
         FawePermissions.all()
         RegionEditGuards.loadEntrypoints()
         ChunkWriteQueue.start()

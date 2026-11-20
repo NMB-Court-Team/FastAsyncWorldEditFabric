@@ -46,6 +46,10 @@ public final class PatternFactory extends AbstractFactory<Pattern> {
     public PatternFactory(WorldEdit worldEdit) {
         super(worldEdit, new SingleBlockPatternParser(worldEdit));
 
+        // 这一项必须排在随机图案前面。随机图案按逗号拆分，并且把同时含有 [ 和 ] 的片段当成已经闭合；
+        // #simplex[4][stone,oak_planks] 里后一个方括号中的逗号会被拆开。
+        register(net.astrorbits.fawe.pattern.FawePatternParsers.parser(worldEdit));
+
         // split and parse each sub-pattern
         register(new RandomPatternParser(worldEdit));
 

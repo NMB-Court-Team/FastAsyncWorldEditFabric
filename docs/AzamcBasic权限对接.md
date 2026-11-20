@@ -50,6 +50,10 @@ AzamcPermissionGroups.register(nodes)
 
 节点 ID 就是 WorldEdit 命令上的原名。`//undo` 接受 `worldedit.history.undo` 或 `worldedit.history.undo.self` 里的任意一个。`//redo` 接受 `worldedit.history.redo` 或 `worldedit.history.redo.self` 里的任意一个。
 
+上表没有写出的节点同样默认 `ADMIN`，并且没有父节点。其中包括原理图、笔刷、历史文件、导航、生成和工具命令上的 `worldedit.*`。`//schem load` 从 https 或 `url:` 下载时额外检查 `worldedit.schematic.load.web`。脚本命令除了 `worldedit.scripting.execute`，还会检查 `worldedit.scripting.execute.<文件名>`；文件名那一项不预先登记。
+
+限额节点在读取 `config/fastasyncworldedit.json` 后登记。`fawe.limit.unlimited` 表示不封顶。每个限额组对应 `fawe.limit.<组名>`，内置组是 `fawe.limit.default`。配置里新增的组会在下次加载时出现在目录中。
+
 ## 查询
 
 登记之后绑定只读查询。检查时读集群权限的内存快照，不要在主线程上等待总线。

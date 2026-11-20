@@ -83,6 +83,7 @@ public final class MaskFactory extends AbstractFactory<Mask> {
 
         register(new BlockCategoryMaskParser(worldEdit));
         register(new BiomeMaskParser(worldEdit));
+        register(net.astrorbits.fawe.mask.FaweMaskParsers.parser(worldEdit));
     }
 
     @Override
@@ -123,7 +124,7 @@ public final class MaskFactory extends AbstractFactory<Mask> {
         return switch (masks.size()) {
             case 0 ->
                 throw new NoMatchException(TranslatableComponent.of("worldedit.error.no-match", TextComponent.of(input)));
-            case 1 -> masks.get(0);
+            case 1 -> masks.getFirst();
             default -> new MaskIntersection(masks);
         };
     }

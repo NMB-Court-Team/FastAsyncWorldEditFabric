@@ -41,6 +41,8 @@ import com.sk89q.worldedit.command.ExpandCommands;
 import com.sk89q.worldedit.command.GeneralCommands;
 import com.sk89q.worldedit.command.GenerationCommands;
 import com.sk89q.worldedit.command.GenerationCommandsRegistration;
+import com.sk89q.worldedit.command.HistoryBrowseCommands;
+import com.sk89q.worldedit.command.HistoryBrowseCommandsRegistration;
 import com.sk89q.worldedit.command.HistoryCommands;
 import com.sk89q.worldedit.command.HistoryCommandsRegistration;
 import com.sk89q.worldedit.command.NavigationCommands;
@@ -185,7 +187,8 @@ public final class PlatformCommandManager {
         this.globalInjectedValues = MapBackedValueStore.create();
         this.registration = new CommandRegistrationHandler(
             ImmutableList.of(
-                new CommandLoggingHandler(worldEdit, COMMAND_LOG)
+                new CommandLoggingHandler(worldEdit, COMMAND_LOG),
+                net.astrorbits.fawe.limit.FaweCommandContext.INSTANCE
             ));
         // setup separate from main constructor
         // ensures that everything is definitely assigned
@@ -233,6 +236,7 @@ public final class PlatformCommandManager {
         ClipboardShareDestinationConverter.register(commandManager);
         SelectorChoiceConverter.register(commandManager);
         SchematicConverter.register(worldEdit, commandManager);
+        com.sk89q.worldedit.command.argument.SchematicSourceConverter.register(worldEdit, commandManager);
     }
 
     private void registerAlwaysInjectedValues() {
@@ -288,7 +292,7 @@ public final class PlatformCommandManager {
      */
     public <CI> void registerSubCommands(String name, List<String> aliases, String desc,
                                          CommandRegistration<CI> registration, CI instance) {
-        registerSubCommands(name, aliases, desc, registration, instance, m -> {
+        registerSubCommands(name, aliases, desc, registration, instance, _ -> {
         });
     }
 
@@ -350,6 +354,11 @@ public final class PlatformCommandManager {
             manager -> {
                 PaintBrushCommands.register(commandManagerService, manager, registration);
                 ApplyBrushCommands.register(commandManagerService, manager, registration);
+                registration.register(
+                    manager,
+                    com.sk89q.worldedit.command.FaweBrushCommandsRegistration.builder(),
+                    new com.sk89q.worldedit.command.FaweBrushCommands(worldEdit)
+                );
             }
         );
         registerSubCommands(
@@ -389,6 +398,13 @@ public final class PlatformCommandManager {
             commandManager,
             HistoryCommandsRegistration.builder(),
             new HistoryCommands(worldEdit)
+        );
+        registerSubCommands(
+            "history",
+            ImmutableList.of("/history"),
+            "History files on disk",
+            HistoryBrowseCommandsRegistration.builder(),
+            new HistoryBrowseCommands()
         );
         this.registration.register(
             commandManager,
@@ -434,7 +450,7 @@ public final class PlatformCommandManager {
     }
 
     void registerCommandsWith(Platform platform) {
-        LOGGER.info("Registering commands with " + platform.getClass().getCanonicalName());
+        LOGGER.info("Registering commands with {}", platform.getClass().getCanonicalName());
 
         LocalConfiguration config = platform.getConfiguration();
         boolean logging = config.logCommands;
@@ -448,12 +464,12 @@ public final class PlatformCommandManager {
             Path file = config.getWorkingDirectoryPath().resolve(path).toAbsolutePath();
             COMMAND_LOG.setLevel(Level.ALL);
 
-            LOGGER.info("Logging WorldEdit commands to " + file);
+            LOGGER.info("Logging WorldEdit commands to {}", file);
 
             try {
                 dynamicHandler.setHandler(new FileHandler(file.toString(), true));
             } catch (IOException e) {
-                LOGGER.warn("Could not use command log file " + path + ": " + e.getMessage());
+                LOGGER.warn("Could not use command log file {}: {}", path, e.getMessage());
             }
 
             dynamicHandler.setFormatter(new LogFormat(config.logFormat));
@@ -577,13 +593,13 @@ public final class PlatformCommandManager {
             store.injectValue(Key.of(Player.class), ValueProvider.constant(player));
             store.injectValue(Key.of(Player.class, OptionalArg.class), ValueProvider.constant(player));
         } else {
-            store.injectValue(Key.of(Player.class), context -> {
+            store.injectValue(Key.of(Player.class), _ -> {
                 throw new CommandException(TranslatableComponent.of("worldedit.command.player-only"), ImmutableList.of());
             });
         }
         store.injectValue(Key.of(Arguments.class), ValueProvider.constant(arguments));
         store.injectValue(Key.of(LocalSession.class),
-            context -> {
+            _ -> {
                 LocalSession localSession = worldEdit.getSessionManager().get(actor);
                 localSession.tellVersion(actor);
                 return Optional.of(localSession);
@@ -613,7 +629,7 @@ public final class PlatformCommandManager {
                 suggestions = commandManager.getSuggestions(access, argStrings);
             } catch (Throwable t) { // catch errors which are *not* command exceptions generated by parsers/suggesters
                 if (!(t instanceof CommandException)) {
-                    LOGGER.debug("Unexpected error occurred while generating suggestions for input: " + arguments, t);
+                    LOGGER.debug("Unexpected error occurred while generating suggestions for input: {}", arguments, t);
                     return;
                 }
                 throw t;

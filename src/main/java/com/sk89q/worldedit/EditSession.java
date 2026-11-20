@@ -207,7 +207,7 @@ public class EditSession implements Extent, AutoCloseable {
     @SuppressWarnings("ProtectedField")
     protected final World world;
     private final @Nullable Actor actor;
-    private final ChangeSet changeSet = new BlockOptimizedHistory();
+    private final ChangeSet changeSet;
 
     private @Nullable SideEffectExtent sideEffectExtent;
     private final SurvivalModeExtent survivalExtent;
@@ -259,6 +259,7 @@ public class EditSession implements Extent, AutoCloseable {
 
         this.world = world;
         this.actor = actor;
+        this.changeSet = net.astrorbits.fawe.history.DiskHistories.open(world, actor);
 
         if (world != null) {
             EditSessionEvent event = new EditSessionEvent(world, actor, maxBlocks, null);
@@ -298,12 +299,13 @@ public class EditSession implements Extent, AutoCloseable {
             this.bypassHistory = traceIfNeeded(new DataValidatorExtent(extent, world));
 
             // These extents can be skipped by calling smartSetBlock()
-            // history 关闭时不包 ChangeSet，这次编辑不进入内存撤销栈。
+            // history 关闭时不包 ChangeSet，这次编辑不进入撤销栈。
             if (net.astrorbits.fawe.internal.FaweHistory.record()) {
                 extent = traceIfNeeded(changeSetExtent = new ChangeSetExtent(extent, changeSet));
             }
             extent = traceIfNeeded(maskingExtent = new MaskingExtent(extent, Masks.alwaysTrue()));
             extent = traceIfNeeded(changeLimiter = new BlockChangeLimiter(extent, maxBlocks));
+            extent = traceIfNeeded(new net.astrorbits.fawe.limit.FaweLimitExtent(extent, actor));
             extent = wrapExtent(extent, eventBus, event, Stage.BEFORE_HISTORY);
             this.bypassNone = traceIfNeeded(new DataValidatorExtent(extent, world));
         } else {
@@ -980,6 +982,7 @@ public class EditSession implements Extent, AutoCloseable {
      */
     @Override
     public void close() {
+        net.astrorbits.fawe.history.DiskHistories.flush(changeSet);
         internalFlushSession();
         dumpTracingInformation();
     }

@@ -24,4 +24,15 @@ package com.sk89q.worldedit;
  */
 public class MaxBrushRadiusException extends MaxRadiusException {
 
+    public MaxBrushRadiusException() {
+        super();
+    }
+
+    /**
+     * @param allowedRadius the effective maximum brush radius that was exceeded
+     */
+    public MaxBrushRadiusException(int allowedRadius) {
+        super(allowedRadius);
+    }
+
 }

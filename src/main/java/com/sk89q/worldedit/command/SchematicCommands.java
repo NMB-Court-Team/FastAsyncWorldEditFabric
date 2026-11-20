@@ -110,13 +110,29 @@ public class SchematicCommands {
     )
     @CommandPermissions({"worldedit.clipboard.load", "worldedit.schematic.load"})
     public void load(Actor actor, LocalSession session,
-                     @SchematicPath
-                     @Arg(desc = "File name.")
-                     Path schematic,
+                     @com.sk89q.worldedit.internal.annotation.SchematicSource
+                     @Arg(desc = "File name, https URL, or url:uuid.")
+                     String filename,
                      @Arg(desc = "Format name.", def = "sponge")
                          ClipboardFormat format) throws FilenameException {
+        if (filename.startsWith("https://") || filename.startsWith("url:")) {
+            if (!actor.hasPermission("worldedit.schematic.load.web")) {
+                actor.printError(com.sk89q.worldedit.util.formatting.text.TranslatableComponent.of("fastasyncworldedit.schematic.web-denied"));
+                return;
+            }
+            AsyncCommandBuilder.wrap(new WebSchematicLoadTask(filename), actor)
+                .registerWithSupervisor(worldEdit.getSupervisor(), "Loading schematic " + filename)
+                .setDelayMessage(TranslatableComponent.of("worldedit.schematic.load.loading"))
+                .setWorkingMessage(TranslatableComponent.of("worldedit.schematic.load.still-loading"))
+                .onSuccess(TextComponent.of(filename, TextColor.GOLD)
+                        .append(TranslatableComponent.of("worldedit.schematic.load.loaded-suffix").color(TextColor.LIGHT_PURPLE))
+                        .append(CodeFormat.wrap("//paste").clickEvent(ClickEvent.of(ClickEvent.Action.SUGGEST_COMMAND, "//paste"))),
+                    session::setClipboard)
+                .onFailure(TranslatableComponent.of("worldedit.schematic.load.failed"), worldEdit.getPlatformManager().getPlatformCommandManager().getExceptionConverter())
+                .buildAndExecNoReturnValue(worldEdit.getExecutorService());
+            return;
+        }
         // Schematic.path is relative, so treat it as filename
-        String filename = schematic.toString();
         File schematicsRoot = worldEdit.getSchematicsManager().getRoot().toFile();
         File f = worldEdit.getSafeOpenFile(actor, schematicsRoot, filename,
                 BuiltInClipboardFormat.SPONGE_V3_SCHEMATIC.getPrimaryFileExtension(),
@@ -346,6 +362,31 @@ public class SchematicCommands {
                 SubtleFormat.wrap(WorldEditText.reduceToText(
                     TranslatableComponent.of("worldedit.schematic.list.loading"),
                     actor.getLocale())));
+    }
+
+    private record WebSchematicLoadTask(String source) implements Callable<ClipboardHolder> {
+        @Override
+        public ClipboardHolder call() throws Exception {
+            try {
+                String url = source.startsWith("url:")
+                    ? net.astrorbits.fawe.net.FaweDownloads.webClipboardUri(source.substring(4)).toString()
+                    : source;
+                byte[] bytes = net.astrorbits.fawe.net.FaweDownloads.download(
+                    url,
+                    net.astrorbits.fawe.config.FaweConfig.INSTANCE.getSchematicDownloadHosts(),
+                    10
+                );
+                return new ClipboardHolder(net.astrorbits.fawe.net.FaweDownloads.readClipboard(bytes, ".schem"));
+            } catch (net.astrorbits.fawe.net.FaweDownloads.Rejected rejected) {
+                throw new WebLoadException(com.sk89q.worldedit.util.formatting.text.TranslatableComponent.of(rejected.getKey()));
+            }
+        }
+    }
+
+    private static final class WebLoadException extends WorldEditException {
+        private WebLoadException(com.sk89q.worldedit.util.formatting.text.Component message) {
+            super(message);
+        }
     }
 
     private record SchematicLoadTask(Actor actor, File file, ClipboardFormat format) implements Callable<ClipboardHolder> {

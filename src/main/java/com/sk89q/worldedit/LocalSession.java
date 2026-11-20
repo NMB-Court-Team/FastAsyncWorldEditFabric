@@ -215,9 +215,27 @@ public class LocalSession {
     }
 
     /**
-     * Clear history.
+     * 从撤销栈里去掉指向这份历史文件的会话。文件本身由调用方删除。
+     *
+     * @param file 已经或即将删除的 `.hist` 文件
+     */
+    public void dropHistoryFile(java.nio.file.Path file) {
+        history.removeIf(session -> {
+            com.sk89q.worldedit.history.changeset.ChangeSet set = session.getChangeSet();
+            return set instanceof net.astrorbits.fawe.history.DiskChangeSet disk && disk.file().equals(file);
+        });
+        historyPointer = Math.min(historyPointer, history.size());
+    }
+
+    /**
+     * 清空撤销栈。
+     * <p>
+     * 栈上每个会话对应的 `.hist` 会先删除，然后清空记录和撤销指针。
      */
     public void clearHistory() {
+        for (EditSession session : history) {
+            net.astrorbits.fawe.history.DiskHistories.release(session);
+        }
         history.clear();
         historyPointer = 0;
     }
@@ -225,6 +243,7 @@ public class LocalSession {
     /**
      * Remember an edit session for the undo history. If the history maximum
      * size is reached, old edit sessions will be discarded.
+     * 被挤出撤销栈的会话，以及这次撤销点之后的重做会话，会删除对应的 `.hist`。
      *
      * @param editSession the edit session
      */
@@ -238,11 +257,11 @@ public class LocalSession {
 
         // Destroy any sessions after this undo point
         while (historyPointer < history.size()) {
-            history.removeLast();
+            net.astrorbits.fawe.history.DiskHistories.release(history.removeLast());
         }
         history.addLast(editSession);
         while (history.size() > MAX_HISTORY_SIZE) {
-            history.removeFirst();
+            net.astrorbits.fawe.history.DiskHistories.release(history.removeFirst());
         }
         historyPointer = history.size();
     }
@@ -1129,6 +1148,8 @@ public class LocalSession {
     /**
      * Construct a new edit session.
      *
+     * 创建前清掉这一轮的失败计数。方块上限按该玩家的变更上限收紧：小于 0 的一侧表示不限制；两侧都有非负上限时取较小值。超过整数上限的玩家限额先收成 {@code Integer.MAX_VALUE}。
+     *
      * @param actor the actor
      * @return an edit session
      */
@@ -1143,10 +1164,11 @@ public class LocalSession {
         }
 
         // Create an edit session
+        net.astrorbits.fawe.limit.FaweLimits.beginEdit();
         EditSessionBuilder builder = WorldEdit.getInstance().newEditSessionBuilder()
             .world(world)
             .actor(actor)
-            .maxBlocks(getBlockChangeLimit())
+            .maxBlocks(net.astrorbits.fawe.limit.FaweLimits.blockChangeLimit(actor, getBlockChangeLimit()))
             .tracing(isTracingActions());
         if (actor.isPlayer() && actor instanceof Player player) {
             builder.blockBag(getBlockBag(player));

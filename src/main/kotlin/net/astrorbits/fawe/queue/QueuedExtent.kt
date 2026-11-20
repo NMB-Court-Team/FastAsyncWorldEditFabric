@@ -9,14 +9,15 @@ import com.sk89q.worldedit.world.World
 import com.sk89q.worldedit.world.block.BaseBlock
 import com.sk89q.worldedit.world.block.BlockStateHolder
 import net.astrorbits.fawe.guard.RegionEditGuards
+import net.astrorbits.fawe.limit.FaweLimits
 
 /**
  * 把方块变更按区块收进 [ChunkWriteQueue]，不把每个方块直接交给世界。
  *
- * 挂在 ChangeSet 内侧。撤销仍由 WorldEdit 的内存历史重放，重放也会进这条队列。
+ * 挂在磁盘历史内侧。历史先记下旧方块，再由队列写入。`//undo` 重放走 `bypassHistory`，仍然经过这一层。
  * [getFullBlock] 在这个坐标有待写入或正在提交的记录时，返回队列里的方块。那份方块有标签时带 NBT，没有时 NBT 为空。[getBlock] 只返回方块状态。
  * 新方块没有 NBT 时，状态与当前位置相同则不入队。有 NBT 时，状态和标签都相同才不入队。
- * 非 [CoreMcWorld] 的范围原样交给内层。区域守卫拒绝时返回 false，方块不入队。
+ * 非 [CoreMcWorld] 的范围原样交给内层。区域守卫拒绝时方块不入队。`maxFails` 小于 0 时不抛出并返回 false；只有 `maxFails` 大于等于 0 且本次拒绝次数大于它时才抛出 [net.astrorbits.fawe.limit.FaweLimitException]。
  *
  * @param extent ChangeSet 内侧的下一层范围。
  * @param world 这次会话正在编辑的世界。
@@ -39,6 +40,7 @@ class QueuedExtent(
     override fun <T : BlockStateHolder<T>> setBlock(location: BlockVector3, block: T): Boolean {
         val levelWorld = world as? CoreMcWorld ?: return super.setBlock(location, block)
         if (!RegionEditGuards.allows(world, location.x(), location.y(), location.z(), actor)) {
+            FaweLimits.recordFailure(actor)
             return false
         }
         val captured = ChunkWriteQueue.capture(block)

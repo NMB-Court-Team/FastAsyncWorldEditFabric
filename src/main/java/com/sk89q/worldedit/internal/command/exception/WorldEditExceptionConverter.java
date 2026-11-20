@@ -116,16 +116,18 @@ public class WorldEditExceptionConverter extends ExceptionConverterHelper {
 
     @ExceptionMatch
     public void convert(MaxBrushRadiusException e) throws CommandException {
+        int allowed = e.getAllowedRadius() >= 0 ? e.getAllowedRadius() : worldEdit.getConfiguration().maxBrushRadius;
         throw newCommandException(
-                TranslatableComponent.of("worldedit.error.max-brush-radius", TextComponent.of(worldEdit.getConfiguration().maxBrushRadius)),
+                TranslatableComponent.of("worldedit.error.max-brush-radius", TextComponent.of(allowed)),
                 e
         );
     }
 
     @ExceptionMatch
     public void convert(MaxRadiusException e) throws CommandException {
+        int allowed = e.getAllowedRadius() >= 0 ? e.getAllowedRadius() : worldEdit.getConfiguration().maxRadius;
         throw newCommandException(
-                TranslatableComponent.of("worldedit.error.max-radius", TextComponent.of(worldEdit.getConfiguration().maxRadius)),
+                TranslatableComponent.of("worldedit.error.max-radius", TextComponent.of(allowed)),
                 e
         );
     }

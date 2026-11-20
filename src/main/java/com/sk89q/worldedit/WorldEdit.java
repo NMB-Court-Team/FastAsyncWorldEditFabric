@@ -424,8 +424,13 @@ public final class WorldEdit {
      * @throws MaxRadiusException if the radius is bigger than the configured radius
      */
     public void checkMaxRadius(double radius) throws MaxRadiusException {
-        if (getConfiguration().maxRadius > 0 && radius > getConfiguration().maxRadius) {
-            throw new MaxRadiusException();
+        Integer allowed = net.astrorbits.fawe.limit.FaweLimits.radiusDenial(
+            net.astrorbits.fawe.limit.FaweCommandContext.actor(),
+            radius,
+            false
+        );
+        if (allowed != null) {
+            throw new MaxRadiusException(allowed);
         }
     }
 
@@ -436,8 +441,13 @@ public final class WorldEdit {
      * @throws MaxBrushRadiusException if the radius is bigger than the configured radius
      */
     public void checkMaxBrushRadius(double radius) throws MaxBrushRadiusException {
-        if (getConfiguration().maxBrushRadius > 0 && radius > getConfiguration().maxBrushRadius) {
-            throw new MaxBrushRadiusException();
+        Integer allowed = net.astrorbits.fawe.limit.FaweLimits.radiusDenial(
+            net.astrorbits.fawe.limit.FaweCommandContext.actor(),
+            radius,
+            true
+        );
+        if (allowed != null) {
+            throw new MaxBrushRadiusException(allowed);
         }
     }
 
