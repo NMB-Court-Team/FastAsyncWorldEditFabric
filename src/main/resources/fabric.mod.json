@@ -6,7 +6,7 @@
     "description": "Fabric version of Fast Async World Edit.",
     "authors": [],
     "contact": {},
-    "license": "GPL-3.0",
+    "license": "GPL-3.0-or-later",
     "icon": "assets/fastasyncworldedit/icon.png",
     "environment": "*",
     "entrypoints": {

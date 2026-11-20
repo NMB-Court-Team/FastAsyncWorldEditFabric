@@ -1,4 +1,21 @@
-Copyright (c) 2026 NMB Court Team
+FastAsyncWorldEditFabric
+Copyright (C) 2026 NMB Court Team
+
+This project is a Fabric port derived from the following upstream projects:
+
+  WorldEdit 7.4.5
+  Copyright (C) sk89q <https://www.sk89q.com>
+  Copyright (C) WorldEdit team and contributors
+  https://github.com/EngineHub/WorldEdit
+
+  FastAsyncWorldEdit
+  Copyright (C) IntellectualSites and FastAsyncWorldEdit contributors
+  https://github.com/IntellectualSites/FastAsyncWorldEdit
+
+Both upstream projects are licensed under the GNU General Public License,
+version 3 or (at your option) any later version. This project is distributed
+under the same terms. See NOTICE.txt for the attribution and a statement of
+the modifications made by this port.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

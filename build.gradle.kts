@@ -241,6 +241,7 @@ tasks.jar {
     from("LICENSE.txt") {
         rename { "${it}_${project.base.archivesName.get()}" }
     }
+    from("NOTICE.txt")
 }
 
 publishing {

@@ -1,0 +1,45 @@
+FastAsyncWorldEditFabric
+Copyright (C) 2026 NMB Court Team
+
+This product is a Fabric port derived from WorldEdit and FastAsyncWorldEdit.
+It is distributed under the GNU General Public License, version 3 or (at your
+option) any later version. The full license text is in LICENSE.txt.
+
+1. Upstream projects
+
+WorldEdit 7.4.5
+  Copyright (C) sk89q <https://www.sk89q.com>
+  Copyright (C) WorldEdit team and contributors
+  https://github.com/EngineHub/WorldEdit
+  License: GNU General Public License, version 3 or later
+
+FastAsyncWorldEdit
+  Copyright (C) IntellectualSites and FastAsyncWorldEdit contributors
+  https://github.com/IntellectualSites/FastAsyncWorldEdit
+  License: GNU General Public License, version 3 or later
+
+The WorldEdit source files in this repository retain their original copyright
+and license headers. Files added for this port are covered by the project
+copyright above and by LICENSE.txt.
+
+2. Statement of modifications
+
+This port was prepared in 2026. It adapts the upstream code to Minecraft 26.2
+and the Fabric loader, replaces selected platform and queue implementations
+with Kotlin code, adds FastAsyncWorldEdit features such as limits, history
+browsing, brushes and schematic sources, and adds a Simplified Chinese
+translation layer. The upstream projects do not endorse this port.
+
+3. Third-party components
+
+The distribution bundles third-party libraries, including SnakeYAML
+(Apache License 2.0), Rhino (Mozilla Public License 2.0), the ANTLR 4 runtime
+(BSD 3-Clause), jchronic (MIT License), jlibnoise (GNU LGPL 3.0), the Adventure
+text API (MIT License), Piston, lin-bus and the WorldEditCUI protocol. Those
+components remain under their own licenses; their license files are included
+with their artifacts or are available from their respective project pages.
+
+4. Source code
+
+The complete corresponding source code for this port is provided in this
+repository and is made available together with any binary distribution.
