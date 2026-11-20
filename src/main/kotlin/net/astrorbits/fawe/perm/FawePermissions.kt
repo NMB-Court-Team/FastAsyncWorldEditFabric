@@ -20,21 +20,21 @@ object FawePermissions {
             FawePermissionNode(
                 id = "worldedit.selection.pos",
                 defaultGroup = FawePermissionDefault.ADMIN,
-                description = "设置 WorldEdit 选区位置",
+                description = "设置WorldEdit选区位置",
             ),
         )
         register(
             FawePermissionNode(
                 id = "worldedit.region.set",
                 defaultGroup = FawePermissionDefault.ADMIN,
-                description = "使用 //set 填充选区",
+                description = "使用//set 填充选区",
             ),
         )
         register(
             FawePermissionNode(
                 id = "worldedit.history.undo",
                 defaultGroup = FawePermissionDefault.ADMIN,
-                description = "撤销 WorldEdit 编辑",
+                description = "撤销WorldEdit编辑",
             ),
         )
         register(
@@ -42,56 +42,56 @@ object FawePermissions {
                 id = "worldedit.history.undo.self",
                 defaultGroup = FawePermissionDefault.ADMIN,
                 parentId = "worldedit.history.undo",
-                description = "撤销自己的 WorldEdit 编辑",
+                description = "撤销自己的WorldEdit编辑",
             ),
         )
         register(
             FawePermissionNode(
                 id = "worldedit.region.replace",
                 defaultGroup = FawePermissionDefault.ADMIN,
-                description = "使用 //replace 替换选区内的方块",
+                description = "使用//replace 替换选区内的方块",
             ),
         )
         register(
             FawePermissionNode(
                 id = "worldedit.region.walls",
                 defaultGroup = FawePermissionDefault.ADMIN,
-                description = "使用 //walls 生成选区四面墙",
+                description = "使用//walls 生成选区四面墙",
             ),
         )
         register(
             FawePermissionNode(
                 id = "worldedit.region.faces",
                 defaultGroup = FawePermissionDefault.ADMIN,
-                description = "使用 //faces 生成选区表面",
+                description = "使用//faces 生成选区表面",
             ),
         )
         register(
             FawePermissionNode(
                 id = "worldedit.region.overlay",
                 defaultGroup = FawePermissionDefault.ADMIN,
-                description = "使用 //overlay 在选区内已有方块的上方放一层",
+                description = "使用//overlay 在选区内已有方块的上方放一层",
             ),
         )
         register(
             FawePermissionNode(
                 id = "worldedit.clipboard.copy",
                 defaultGroup = FawePermissionDefault.ADMIN,
-                description = "使用 //copy 复制选区",
+                description = "使用//copy 复制选区",
             ),
         )
         register(
             FawePermissionNode(
                 id = "worldedit.clipboard.cut",
                 defaultGroup = FawePermissionDefault.ADMIN,
-                description = "使用 //cut 剪切选区",
+                description = "使用//cut 剪切选区",
             ),
         )
         register(
             FawePermissionNode(
                 id = "worldedit.clipboard.paste",
                 defaultGroup = FawePermissionDefault.ADMIN,
-                description = "使用 //paste 粘贴剪贴板",
+                description = "使用//paste 粘贴剪贴板",
             ),
         )
         // //schem load 与 //schem save 的权限条件是两个节点满足其一。
@@ -100,56 +100,56 @@ object FawePermissions {
             FawePermissionNode(
                 id = "worldedit.clipboard.load",
                 defaultGroup = FawePermissionDefault.ADMIN,
-                description = "使用 //schem load 把原理图加载进剪贴板。与 worldedit.schematic.load 满足其一即可",
+                description = "使用//schem load 把原理图加载进剪贴板。与worldedit.schematic.load满足其一即可",
             ),
         )
         register(
             FawePermissionNode(
                 id = "worldedit.schematic.load",
                 defaultGroup = FawePermissionDefault.ADMIN,
-                description = "使用 //schem load 把原理图加载进剪贴板。与 worldedit.clipboard.load 满足其一即可",
+                description = "使用//schem load 把原理图加载进剪贴板。与worldedit.clipboard.load满足其一即可",
             ),
         )
         register(
             FawePermissionNode(
                 id = "worldedit.clipboard.save",
                 defaultGroup = FawePermissionDefault.ADMIN,
-                description = "使用 //schem save 把剪贴板保存为原理图。与 worldedit.schematic.save 满足其一即可",
+                description = "使用//schem save 把剪贴板保存为原理图。与worldedit.schematic.save满足其一即可",
             ),
         )
         register(
             FawePermissionNode(
                 id = "worldedit.schematic.save",
                 defaultGroup = FawePermissionDefault.ADMIN,
-                description = "使用 //schem save 把剪贴板保存为原理图。与 worldedit.clipboard.save 满足其一即可",
+                description = "使用//schem save 把剪贴板保存为原理图。与worldedit.clipboard.save满足其一即可",
             ),
         )
         register(
             FawePermissionNode(
                 id = "worldedit.schematic.delete",
                 defaultGroup = FawePermissionDefault.ADMIN,
-                description = "使用 //schem delete 删除原理图。覆盖已有文件的 //schem save -f 也检查这个节点",
+                description = "使用//schem delete 删除原理图。覆盖已有文件的//schem save -f 也检查这个节点",
             ),
         )
         register(
             FawePermissionNode(
                 id = "worldedit.schematic.list",
                 defaultGroup = FawePermissionDefault.ADMIN,
-                description = "使用 //schem list 列出已保存的原理图",
+                description = "使用//schem list 列出已保存的原理图",
             ),
         )
         register(
             FawePermissionNode(
                 id = "worldedit.schematic.formats",
                 defaultGroup = FawePermissionDefault.ADMIN,
-                description = "使用 //schem formats 列出可用的原理图格式",
+                description = "使用//schem formats 列出可用的原理图格式",
             ),
         )
         register(
             FawePermissionNode(
                 id = "worldedit.history.redo",
                 defaultGroup = FawePermissionDefault.ADMIN,
-                description = "重做 WorldEdit 编辑",
+                description = "重做WorldEdit编辑",
             ),
         )
         register(
@@ -157,7 +157,7 @@ object FawePermissions {
                 id = "worldedit.history.redo.self",
                 defaultGroup = FawePermissionDefault.ADMIN,
                 parentId = "worldedit.history.redo",
-                description = "重做自己的 WorldEdit 编辑",
+                description = "重做自己的WorldEdit编辑",
             ),
         )
         FaweExtraPermissions.register()

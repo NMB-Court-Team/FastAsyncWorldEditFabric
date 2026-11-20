@@ -543,5 +543,10 @@
     "fastasyncworldedit.schematic.host-denied": "That host is not allowlisted, could not be resolved, or resolved to a loopback, link-local, site-local, or any-local address.",
     "fastasyncworldedit.schematic.web-denied": "You cannot load a schematic from the web.",
     "fastasyncworldedit.schematic.download": "Download: {0}",
-    "fastasyncworldedit.schematic.delete-link": "Delete: {0}"
+    "fastasyncworldedit.schematic.delete-link": "Delete: {0}",
+    "fastasyncworldedit.pattern.existing.extent-required": "An extent is required for #existing.",
+    "fastasyncworldedit.pattern.biome.unknown": "Unknown biome {0}.",
+    "fastasyncworldedit.pattern.noise.pattern-required": "The noise pattern needs a pattern list.",
+    "fastasyncworldedit.pattern.clipboard.empty": "The clipboard is empty.",
+    "fastasyncworldedit.mask.angle.mixed-units": "Angle bounds must both use degrees or both use slopes."
 }

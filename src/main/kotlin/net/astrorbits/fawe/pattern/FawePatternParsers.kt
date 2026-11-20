@@ -14,6 +14,8 @@ import com.sk89q.worldedit.math.BlockVector3
 import com.sk89q.worldedit.math.Vector3
 import com.sk89q.worldedit.regions.shape.WorldEditExpressionEnvironment
 import com.sk89q.worldedit.util.HandSide
+import com.sk89q.worldedit.util.formatting.text.TextComponent
+import com.sk89q.worldedit.util.formatting.text.TranslatableComponent
 import com.sk89q.worldedit.world.biome.BiomeType
 import com.sk89q.worldedit.world.block.BaseBlock
 import com.sk89q.worldedit.world.block.BlockState
@@ -185,7 +187,9 @@ object FawePatternParsers {
     }
 
     private fun existing(extent: Extent?): Pattern {
-        val source = extent ?: throw InputParseException("An extent is required for #existing")
+        val source = extent ?: throw InputParseException(
+            TranslatableComponent.of("fastasyncworldedit.pattern.existing.extent-required"),
+        )
         return object : AbstractPattern() {
             override fun applyBlock(position: BlockVector3): BaseBlock = source.getFullBlock(position)
         }
@@ -216,7 +220,9 @@ object FawePatternParsers {
 
     private fun biome(name: String, extent: Extent?): Pattern {
         val biome = BiomeType.REGISTRY.get(if (name.contains(':')) name else "minecraft:$name")
-            ?: throw InputParseException("Unknown biome $name")
+            ?: throw InputParseException(
+                TranslatableComponent.of("fastasyncworldedit.pattern.biome.unknown", TextComponent.of(name)),
+            )
         return object : AbstractPattern() {
             override fun applyBlock(position: BlockVector3): BaseBlock {
                 extent?.setBiome(position, biome)
@@ -232,7 +238,7 @@ object FawePatternParsers {
         val scale = 1.0 / max(1.0, args[0].toDouble())
         val patterns = childPatterns(worldEdit, context, args[1])
         if (patterns.isEmpty()) {
-            throw InputParseException("Noise pattern needs a pattern list")
+            throw InputParseException(TranslatableComponent.of("fastasyncworldedit.pattern.noise.pattern-required"))
         }
         if (patterns.size == 1) {
             return patterns[0]
@@ -445,12 +451,13 @@ object FawePatternParsers {
     }
 
     private fun fullCopy(context: ParserContext, args: List<String>?): Pattern? {
-        val clipboard = context.session?.clipboard?.clipboard ?: throw InputParseException("Clipboard is empty")
+        val clipboard = context.session?.clipboard?.clipboard
+            ?: throw InputParseException(TranslatableComponent.of("fastasyncworldedit.pattern.clipboard.empty"))
         val origin = clipboard.origin
         val region = clipboard.region
         val positions = region.toList()
         if (positions.isEmpty()) {
-            throw InputParseException("Clipboard is empty")
+            throw InputParseException(TranslatableComponent.of("fastasyncworldedit.pattern.clipboard.empty"))
         }
         return object : AbstractPattern() {
             override fun applyBlock(position: BlockVector3): BaseBlock {

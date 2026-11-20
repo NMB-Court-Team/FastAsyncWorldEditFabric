@@ -14,6 +14,7 @@ import com.sk89q.worldedit.function.mask.OffsetMask
 import com.sk89q.worldedit.internal.registry.InputParser
 import com.sk89q.worldedit.math.BlockVector3
 import com.sk89q.worldedit.util.HandSide
+import com.sk89q.worldedit.util.formatting.text.TranslatableComponent
 import com.sk89q.worldedit.world.block.BlockTypes
 import net.astrorbits.fawe.pattern.FaweNoise
 import java.util.stream.Stream
@@ -186,7 +187,7 @@ object FaweMaskParsers {
         }
         val degrees = args[0].endsWith("d")
         if (degrees != args[1].endsWith("d")) {
-            throw InputParseException("Angle bounds must both use degrees or both use slopes")
+            throw InputParseException(TranslatableComponent.of("fastasyncworldedit.mask.angle.mixed-units"))
         }
         var min = number(args[0])
         var maxValue = number(args[1])
