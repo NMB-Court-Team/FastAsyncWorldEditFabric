@@ -8,10 +8,8 @@ import com.sk89q.worldedit.world.block.BlockStateHolder
 import com.sk89q.worldedit.world.block.BlockState as WeBlockState
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExecutorCoroutineDispatcher
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.asCoroutineDispatcher
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import net.astrorbits.fawe.FastAsyncWorldEditMain
 import net.astrorbits.fawe.config.FaweConfig
@@ -31,16 +29,21 @@ import java.util.concurrent.Executors
  * 后台协程只把方块状态换成原版状态，不查看 NBT，也不访问方块实体。
  * tick 末尾取出的区块在后台转换后回到服务器线程，写入 [net.minecraft.world.level.chunk.LevelChunkSection]。
  * [flush] 在调用它的服务器线程上直接写入。
+ *
+ * 后台调度跟随模组进程。集成服务器每次离开世界都会停止，模组不会因此再次初始化。
+ * 服务器停止回调在世界卸载前尝试写入队列里尚未落进区段的区块，调度留给下一次服务器。
+ * 某一区块写入失败时记入日志并跳过。停止之后才回到服务器线程的准备结果会被丢掉，不会再写。
  */
 object ChunkWriteQueue {
     private val worlds = HashMap<String, PendingWorld>()
     private var scope: CoroutineScope? = null
-    private var dispatcher: ExecutorCoroutineDispatcher? = null
+    private var generation = 0
 
     /**
      * 按配置里的并行度启动后台调度，并在每个服务器 tick 末尾取出区块。
      *
-     * 已经启动时不再登记第二次 tick 回调。服务器停止时关闭后台调度。
+     * 已经启动时不再登记第二次回调。调度保留到进程结束。
+     * 服务器停止时尝试写入队列里各个世界尚未落进区段的区块，不关闭调度。某一区块失败时记入日志并跳过。
      */
     fun start() {
         if (scope != null) {
@@ -51,10 +54,9 @@ object ChunkWriteQueue {
             Thread(runnable, "FastAsyncWorldEdit-Chunk").apply { isDaemon = true }
         }
         val nextDispatcher = executor.asCoroutineDispatcher()
-        dispatcher = nextDispatcher
         scope = CoroutineScope(SupervisorJob() + nextDispatcher)
         ServerTickEvents.END_SERVER_TICK.register { server -> drain(server) }
-        ServerLifecycleEvents.SERVER_STOPPING.register { stop() }
+        ServerLifecycleEvents.SERVER_STOPPING.register { flushRemaining() }
     }
 
     /**
@@ -137,6 +139,7 @@ object ChunkWriteQueue {
     private fun drain(server: MinecraftServer) {
         val budget = FaweConfig.chunksPerTick
         val activeScope = scope ?: return
+        val launchedGeneration = generation
         var taken = 0
         for (pending in worlds.values) {
             if (taken >= budget) {
@@ -157,6 +160,10 @@ object ChunkWriteQueue {
                 activeScope.launch {
                     val prepared = prepare(snapshot)
                     server.execute {
+                        // 服务器停止时世代号已增加。停止回调已经尝试写入剩余区块，失败的只记日志。这一轮不再写。
+                        if (launchedGeneration != generation) {
+                            return@execute
+                        }
                         try {
                             FabricSectionApplier.apply(snapshot, prepared)
                         } catch (throwable: Throwable) {
@@ -174,6 +181,68 @@ object ChunkWriteQueue {
                 }
             }
         }
+    }
+
+    /**
+     * 在服务器停止、世界仍可写入时，尝试把还没落进区段的区块直接写完。
+     *
+     * 必须在服务器线程调用。世代号先增加，停止前取出、尚未写回的那一轮会在回到服务器线程时放弃。
+     * 先清空世界表，再写入取出的记录，避免下一次世界沿用已卸载世界的队列。
+     * 同一区块既有正在提交的记录又有新入队的记录时，新入队的方块覆盖同一位置。
+     * 某个区块写入失败时记入日志并跳过，不向外抛出。
+     */
+    private fun flushRemaining() {
+        generation++
+        val pendingWorlds = worlds.entries.toList()
+        worlds.clear()
+        for ((worldId, pending) in pendingWorlds) {
+            val chunkKeys = HashSet<Long>()
+            chunkKeys.addAll(pending.chunks.keys)
+            chunkKeys.addAll(pending.inFlight.keys)
+            for (chunkKey in chunkKeys) {
+                val blocks = merge(pending.inFlight.remove(chunkKey), pending.chunks.remove(chunkKey)) ?: continue
+                if (blocks.isEmpty()) {
+                    continue
+                }
+                val chunkSnapshot = snapshot(pending.world, chunkKey, blocks)
+                try {
+                    FabricSectionApplier.apply(chunkSnapshot, prepare(chunkSnapshot))
+                } catch (throwable: Throwable) {
+                    FastAsyncWorldEditMain.LOGGER.error(
+                        "Failed to apply chunk {}, {} in {} while the server was stopping",
+                        chunkSnapshot.chunkX,
+                        chunkSnapshot.chunkZ,
+                        worldId,
+                        throwable,
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * 同一位置同时存在两份记录时，保留后入队的那一份。
+     *
+     * @param older 正在提交的记录。没有时为 null。
+     * @param newer 尚未取出的记录。没有时为 null。
+     * @return 合并后的记录。两份都没有时返回 null。
+     */
+    private fun merge(
+        older: Long2ObjectOpenHashMap<PendingBlock>?,
+        newer: Long2ObjectOpenHashMap<PendingBlock>?,
+    ): Long2ObjectOpenHashMap<PendingBlock>? {
+        if (older == null) {
+            return newer
+        }
+        if (newer == null) {
+            return older
+        }
+        val iterator = newer.long2ObjectEntrySet().iterator()
+        while (iterator.hasNext()) {
+            val entry = iterator.next()
+            older.put(entry.longKey, entry.value)
+        }
+        return older
     }
 
     private fun snapshot(world: CoreMcWorld, chunkKey: Long, blocks: Long2ObjectOpenHashMap<PendingBlock>): ChunkSnapshot {
@@ -220,13 +289,6 @@ object ChunkWriteQueue {
             )
         }
         return prepared
-    }
-
-    private fun stop() {
-        scope?.cancel()
-        scope = null
-        dispatcher?.close()
-        dispatcher = null
     }
 
     private class PendingWorld(var world: CoreMcWorld) {
